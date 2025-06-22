@@ -1,3 +1,5 @@
+# raft_kv_store/node.py
+
 import json
 import threading
 import random
@@ -98,6 +100,11 @@ class Node:
 
     def _handle_client_get(self, message, conn):
         with self._lock:
+            if self._state != NodeState.LEADER:
+                leader_info = self.peers_config.get(self.current_leader_id)
+                leader_addr = f"{leader_info['host']}:{leader_info['port']}" if leader_info else None
+                self._send_client_response(conn, {"success": False, "leader": leader_addr})
+                return
             value = self.kv_store.get(message["payload"]["key"])
         self._send_client_response(conn, {"success": True, "value": value})
 
